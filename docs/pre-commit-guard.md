@@ -1,94 +1,80 @@
 # 🔐 Environment variables
 
-This project keeps secrets (DB password, etc.) in a `.env` file. The values are **encrypted** with **Dotenvx**, so the `.env` file is safe to have in the repo — nobody can read the secrets without the private key.
+This project keeps secrets (DB password, etc.) in a `.env` file. The values are
+**encrypted** with [Dotenvx](https://dotenvx.com), so the `.env` file is safe to
+commit — nobody can read the secrets without the private key.
 
-A **pre-commit guard** makes sure you never accidentally commit a `.env` with plaintext (unencrypted) secrets.
+A **pre-commit hook** (built into Dotenvx) makes sure you never accidentally
+commit a `.env` with plaintext (unencrypted) secrets.
+
+---
 
 ## What you need to install
 
-### 1. Dotenvx — encrypts/decrypts the `.env`
+### Dotenvx — encrypts/decrypts the `.env`
 
 ```bash
 npm install -g @dotenvx/dotenvx
 ```
 
-### 2. pip — the package manager for Python
+That's the only tool required. The pre-commit check is part of Dotenvx — no
+Python, no `pre-commit` framework, no custom scripts.
 
-You need **pip** because the pre-commit tool is written in Python and is installed with it.
-
-Same role as tools you may know: Node uses **npm**, Java uses **Maven/Gradle**, Python uses **pip**.
-
-Check if you already have it:
-
-```bash
-pip --version
-```
-
-If that fails, try:
-
-```bash
-pip3 --version
-```
-
-- Installed → shows a version like `pip 24.0 from ...`
-- Not installed → shows `command not found`
-
-Install it (Pop!_OS / Ubuntu):
-
-```bash
-sudo apt install python3-pip
-```
-
-### 3. pre-commit — runs the safety check before each commit
-
-Install the tool:
-
-```bash
-pip install pre-commit
-```
-
-Then activate it in the repo (see [One-time setup](#one-time-setup-after-cloning) below).
+---
 
 ## One-time setup after cloning
 
-Activate the guard in your local repo:
+**1. Get the private key.**
+To decrypt the `.env` and run the app, you need the **`.env.keys`** file. It is
+**not** in the repo (it's gitignored on purpose). Get it from the project owner
+and place it in the project root.
+
+> The private key is the one thing that must stay secret. If it leaked, all the
+> encrypted values could be read.
+
+**2. Install the pre-commit hook.**
 
 ```bash
-pre-commit install
+dotenvx ext precommit --install
 ```
 
-**Why:** git hooks don't come with a clone. This command wires the check into your git so it runs automatically on every commit. You do this **once**.
+This wires a check into git so it runs automatically on every commit. Git hooks
+don't come with a clone, so **each person must run this once** after cloning.
 
-## The private key 🔑
-
-To decrypt the `.env` and run the app, you need the **`.env.keys`** file. It is **not** in the repo (it's gitignored on purpose). Get it from the project owner and place it in the project root.
-
-**Why:** the private key is the one thing that must stay secret. If it leaked, all the encrypted values could be read.
+---
 
 ## Daily use
 
-Add or change a secret — use `dotenvx set` so it's encrypted right away:
+**Add or change a secret** — use `dotenvx set` so it's encrypted right away:
 
 ```bash
 dotenvx set DB_PASSWORD yourpassword
 ```
 
-Read a value (decrypted):
+**Read a value** (decrypted):
 
 ```bash
 dotenvx get DB_PASSWORD
 ```
 
+**Run the app with decrypted values injected:**
+
+```bash
+dotenvx run -- mvn spring-boot:run
+```
+
+> In IntelliJ, the run configuration has **Enable Dotenvx** ticked, so running
+> from the IDE decrypts and injects the values automatically.
+
+---
+
 ## What happens when you commit
 
-Every `git commit` triggers the guard:
+Every `git commit` triggers the hook. It checks that all `.env` files are
+protected (encrypted or gitignored):
 
-- ✅ All values encrypted → commit goes through
-- ❌ A plaintext secret found → commit blocked with:
-
-```
-  ❌ Run dotenvx encrypt first
-```
+- ✅ **Protected** → commit goes through
+- ❌ **Plaintext secret found** → commit blocked, with a hint on how to fix it
 
 If you get blocked, encrypt and commit again:
 
@@ -97,3 +83,20 @@ dotenvx encrypt
 git add .env
 git commit -m "your message"
 ```
+
+You can also run the check manually anytime:
+
+```bash
+dotenvx ext precommit
+```
+
+---
+
+## How the encryption works (quick reference)
+
+- Each value is encrypted with **ECIES** (secp256k1 + AES-256-GCM).
+- Format in the file: `KEY="encrypted:<base64 blob>"`.
+- The public key (`DOTENV_PUBLIC_KEY`) lives in `.env` and encrypts values.
+- The private key (`.env.keys`) decrypts them and is **never committed**.
+- The same value encrypts to a **different blob each time** — that's expected
+  (fresh random key per encryption).

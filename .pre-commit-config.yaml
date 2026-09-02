@@ -1,9 +1,0 @@
-repos:
-  - repo: local
-    hooks:
-      - id: dotenvx-check
-        name: Check .env is encrypted
-        entry: bash -c 'grep -E "^[A-Za-z_][A-Za-z0-9_]*=.+" .env | grep -v "^DOTENV_PUBLIC_KEY" | grep -vq "encrypted:" && echo "❌ Run dotenvx encrypt first" && exit 1 || exit 0'
-        language: system
-        files: ^\.env$
-        pass_filenames: false
