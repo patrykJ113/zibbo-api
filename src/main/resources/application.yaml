@@ -1,0 +1,30 @@
+spring:
+  application:
+    name: zibboApi
+
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:zibbo}?sslmode=${DB_SSLMODE:prefer}
+    username: ${DB_USER:zibbo}
+    password: ${DB_PASSWORD:zibbo}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: true
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    # Migrations run against the direct endpoint; a transaction pooler breaks
+    # Flyway's session-level locking. Falls back to DB_HOST when unset.
+    url: jdbc:postgresql://${DB_MIGRATION_HOST:${DB_HOST:localhost}}:${DB_PORT:5432}/${DB_NAME:zibbo}?sslmode=${DB_SSLMODE:prefer}
+    user: ${DB_USER:zibbo}
+    password: ${DB_PASSWORD:zibbo}
+
+server:
+  port: ${SERVER_PORT:8080}

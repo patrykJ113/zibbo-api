@@ -1,0 +1,1 @@
+-- Baseline migration. No schema yet; add tables here as entities are introduced.

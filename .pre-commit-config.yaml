@@ -1,0 +1,8 @@
+repos:
+  - repo: local
+    hooks:
+      - id: dotenvx-check
+        name: Check .env is encrypted
+        entry: bash -c 'grep -E "^[A-Z_]+=.+" .env | grep -vq "encrypted:" && echo "❌ Run dotenvx encrypt first" && exit 1 || exit 0'
+        language: system
+        files: ^\.env$
