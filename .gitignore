@@ -33,9 +33,7 @@ build/
 .vscode/
 
 ### Env ###
-.env
 .env.keys
-!.env.example
 
 ### Claude Code ###
 .claude/settings.local.json
